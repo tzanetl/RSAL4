@@ -45,6 +45,7 @@ void rsa_decrypt(const char * privkeyFileName, string inFileName) {
 	const EVP_CIPHER * type;
 	int res;
 	int outLength;
+	int length;
 
 	//Loading the ciphers
 	OpenSSL_add_all_ciphers();
@@ -60,7 +61,7 @@ void rsa_decrypt(const char * privkeyFileName, string inFileName) {
 
 	// Opening the input file
 	ifstream fin;
-	fin.open(inFileName, ios::binary);
+	fin.open(inFileName, ios::in | ios::binary);
 
 	if (!fin) {
 		cout << "Error opening file \"" << inFileName << "\"" << endl;
@@ -81,12 +82,12 @@ void rsa_decrypt(const char * privkeyFileName, string inFileName) {
 	l2			IV
 	*/
 
-	int length;
-
 	// Reading length of cipherName and reading cipherName
 	fin.read((char *)&length, 4);
-	fin.read((char *)&type, length);
-	cout << type << endl;
+	// http://stackoverflow.com/questions/10984484/reading-from-file-strange-ending
+	char *cipherName = new char[length + 1];
+	cipherName[length] = '\0';
+	fin.read(cipherName, length);
 
 	// Reading my_eklen
 	fin.read((char *)&my_eklen, 4);
@@ -98,6 +99,15 @@ void rsa_decrypt(const char * privkeyFileName, string inFileName) {
 	// Reading length of IV and IV
 	fin.read((char *)&length, 4);
 	fin.read((char *)&iv, length);
+
+	// Getting the cipher by name and checking if it was found
+	type = EVP_get_cipherbyname(cipherName);
+
+	if (!type) {
+		printf("Cipher %s not found.\n", cipherName);
+		cin.get();
+		exit(EXIT_FAILURE);
+	}
 
 	// Parsing the output file name and opening the output file
 	string outFileName;
@@ -113,7 +123,7 @@ void rsa_decrypt(const char * privkeyFileName, string inFileName) {
 	}
 
 	// Open initialization
-	res = EVP_OpenInit(ctx, EVP_aes_256_cbc(), my_ek, my_eklen, iv, privkey);
+	res = EVP_OpenInit(ctx, type, my_ek, my_eklen, iv, privkey);
 
 	if (res != 1) {
 		cout << "Open Initialization failure" << endl;

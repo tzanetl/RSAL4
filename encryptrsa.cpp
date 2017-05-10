@@ -47,6 +47,7 @@ void rsa_encrypt(const char * pubkeyFileName, string inFileName, const char *cip
 	const EVP_CIPHER * type;
 	int res;
 	int outLength;
+	int length;
 
 	//Loading the ciphers
 	OpenSSL_add_all_ciphers();
@@ -101,7 +102,6 @@ void rsa_encrypt(const char * pubkeyFileName, string inFileName, const char *cip
 		exit(EXIT_FAILURE);
 	}
 
-	
 	/*
 	Write: type, my_ek, my_eklen, iv to the output file
 	Header structure
@@ -115,20 +115,19 @@ void rsa_encrypt(const char * pubkeyFileName, string inFileName, const char *cip
 	*/
 
 	// Writing type and its length
-	int length = sizeof(type);
-	fout.write(reinterpret_cast<const char *>(&length), sizeof(length));
-	fout.write(reinterpret_cast<const char *>(&type), length);
-	cout << type << endl;
+	length = strlen(cipherName);
+	fout.write(reinterpret_cast<const char *>(&length), 4);
+	fout.write((char *)cipherName, length);
 
 	// Write my_eklen to output file
-	fout.write(reinterpret_cast<const char *>(&my_eklen), sizeof(my_eklen));
+	fout.write(reinterpret_cast<const char *>(&my_eklen), 4);
 
 	// Write my_ek to output file
 	fout.write((char *)&my_ek[0], my_eklen);
 
 	// Writing iv and its length
 	length = sizeof(iv);
-	fout.write(reinterpret_cast<const char *>(&length), sizeof(length));
+	fout.write(reinterpret_cast<const char *>(&length), 4);
 	fout.write((char *)iv, sizeof(iv));
 
 	// Raeding from input file, encrypting it and writing to output file
